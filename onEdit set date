@@ -1,0 +1,29 @@
+function onEdit(event) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getActiveSheet();
+  var sheetName = sheet.getSheetName();
+  var matchName = ["Hakai Data - Chlorophyll","Hakai Data - Blanks and Solid Standards"]
+  var matchFound = false;
+  for (var i = 0; i < matchName.length; i++) {
+    if (sheetName.match(matchName[i])) matchFound = true;
+  }
+  if (!matchFound) return;
+  
+  
+  var updateColName = "Before Acid";
+  var updateColName2 = "After Acid";
+  var timeStampColName = "Date";
+
+  var actRng = event.source.getActiveRange();
+  var editColumn = actRng.getColumn(); //Returns the column position
+  var index = actRng.getRowIndex(); //Returns the row number
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues();
+  var dateCol = headers[0].indexOf(timeStampColName);
+  var updateCol = headers[0].indexOf(updateColName); updateCol = updateCol+1;
+  var updateCol2 = headers[0].indexOf(updateColName2); updateCol2 = updateCol2+1;
+  if (dateCol > -1 && index > 1 && (editColumn == updateCol || editColumn == updateCol2) ) { // only timestamp if 'Last Updated' header exists, but not in the header row itself!
+    var cell = sheet.getRange(index, dateCol + 1);
+    var date = new Date();
+    cell.setValue(date);
+  }
+}

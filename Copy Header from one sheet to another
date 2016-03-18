@@ -1,0 +1,37 @@
+function copyHeader() { //This copies the header on sheet 2 to all the remaining sheets
+  var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+  var rangeToCopy = sheets[1].getRange(1, 1, 1,sheets[1].getMaxColumns()); //Gets the range of cells in in row 1 from column 1 to the last column in the sheet
+   
+  for(var s = 2; s < sheets.length; s++){  //Start on the third sheet
+    var sheet = sheets[s];
+    
+    rangeToCopy.copyTo(sheet.getRange(1,1,1,sheets[1].getLastColumn())); //This sets the values and cell color in the current sheet
+    
+    for(var k = 1; k < sheets[1].getLastColumn(); k++){ //Set the columns to a standard width
+      sheet.setColumnWidth(k,110);
+      
+     }
+    
+   };
+};
+
+
+function copyHeader() { //This copies the header on sheet 2 to all the remaining sheets
+  var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+  var maxRows = sheets[1].getMaxRows();
+  var maxCols = sheets[1].getMaxColumns();
+  var lastCol = sheets[1].getLastColumn();
+  var rangeToCopy = sheets[1].getRange(1, 1, maxRows,maxCols); //Gets the range of cells in in row 1 from column 1 to the last column in the sheet
+   
+  for(var s = 2; s < sheets.length; s++){  //Start on the third sheet
+    var sheet = sheets[s];
+    
+    rangeToCopy.copyTo(sheet.getRange(1,1,maxRows,lastCol)); //This sets the values and cell color in the current sheet
+    
+    for(var k = 1; k < lastCol; k++){ //Set the columns to a standard width
+      sheet.setColumnWidth(k,110);
+      
+     }
+    
+   };
+};

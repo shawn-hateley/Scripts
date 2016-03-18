@@ -1,0 +1,139 @@
+
+
+function Lookups() { //This function maps column numbers to lookup variables
+    var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+    var LookupSheet = sheets[0];
+    var lookupSheetHeader = LookupSheet.getRange(1,1,LookupSheet.getLastRow(),1).getValues();
+    var indexSheet = sheets[1];
+    var j = 3; // start setting results in column 3 
+    var sheetHeader = indexSheet.getRange(1,1,1,indexSheet.getLastColumn()).getValues(); //Get the header for the sheet
+      
+      for (var k = 0; k < lookupSheetHeader.length; k++){    //Do this for each value in the Header on the summary page
+
+        if (sheetHeader[0].indexOf(lookupSheetHeader[k][0]) != -1){ //Do this if not false
+          
+          range = LookupSheet.getRange(k+1,j,1,1);
+          range.setValue(sheetHeader[0].indexOf(lookupSheetHeader[k][0])); //Set the value
+
+        }
+      }
+      
+     j++;     
+}
+
+function RAW() {
+
+    var keySSID = "171VDrhtF66MUNrKLWYN4R9FU_jUGnBbVsVLXdzjaY4I"; //Spreadsheet with Marine Lab Keys
+    var keySheets = SpreadsheetApp.openById(keySSID).getSheets();
+    var keys = keySheets[0].getRange(2,2,keySheets[0].getLastRow(),1).getValues(); 
+    
+   
+    var update=[];
+    
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+    var lookupSheet = sheets[0]; 
+    var summarySheet = sheets[1];
+    var templateSheet = sheets[1];
+    var summaryHeader = summarySheet.getRange(1,1,1,summarySheet.getLastColumn()).getValues()[0];    
+
+    var filter = lookupSheet.getRange(2,5,1,1).getValue();
+    
+    
+  for (var b = 0; b < keys.length; b++){ //Do this for each Marine Lab Spreadsheet
+      
+    if (keys[b] != ""){
+    
+      var j = 2; // start setting results in row 2 
+      var mlSheets = SpreadsheetApp.openById(keys[b]).getSheets();
+      var ssName = SpreadsheetApp.openById(keys[b]).getName();
+      var matchFound = false;
+      
+      //Check to see if the spreadsheet exists and create it if it doesn't
+      for (var c = 0; c < sheets.length; c++){
+        if (ssName == (sheets[c].getSheetName())) matchFound = true;
+      }
+      if (!matchFound){
+        ss.insertSheet(ssName,sheets.length-1,{template: templateSheet});
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
+        var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+      }
+      
+    //Check to see if the spreadsheet has been edited recently
+    var file = DriveApp.getFileById(keys[b]);
+    if (matchFound == true && new Date() - file.getLastUpdated() > 604800000) continue;
+      
+      //Get the postition of the sheet that matches the current key and clear the contents
+      var summaryNumber = ss.getSheetByName(ssName).getIndex()-1;
+      summarySheet = sheets[summaryNumber];
+      summarySheet.getRange(j,1,summarySheet.getLastRow(),summarySheet.getLastColumn()).clear();
+      
+      update.push(ssName); //Add the name of the updated spreadsheets to this array
+      
+    // Get the column numbers for each variable
+    for(var s = 0; s < mlSheets.length; s++){ //Do this for each Marine Lab sheet
+    
+      var processed = []; 
+      var map = [];
+      var sheetHeader = mlSheets[s].getRange(1,1,1,mlSheets[s].getLastColumn()).getValues()[0]; //Get the header for the sheet      
+
+      
+      //Map the header column numbers
+      for (var k = 0; k < summaryHeader.length; k++){    //Do this for each value in the Header on the summary page
+
+        if (filter.indexOf(summaryHeader[k]) > -1){ // Assign the column number to filter the results on to a variable
+           var filterCol = sheetHeader.indexOf(summaryHeader[k])
+        }
+
+       if (sheetHeader.indexOf(summaryHeader[k]) == -1){ //If the column name is not in the list assign a temporary value of ZZ
+          map.push("ZZ");
+       }
+         else {
+           map.push(sheetHeader.indexOf(summaryHeader[k]));
+         }           
+       }
+
+
+      // Get all the data from the raw sheets
+      var sheet = mlSheets[s];
+      var rows = sheet.getDataRange();
+      var numRows = rows.getNumRows();
+      var values = rows.getValues();
+      
+      // Get only the data I want
+      for (var i = 1; i < numRows; i++) {
+        var row = values[i];  
+        if (row[filterCol] != ""){ //Filter the results by checking to see if the filterCol is empty
+
+        var preprocessed = [];
+                
+        for (var n = 0; n < summaryHeader.length; n++){
+          if (map[n] == "ZZ"){ //If the value is ZZ then enter nothing in the cell
+            preprocessed.push("");
+          }
+            else if (row[map[n]] == "Other"){ // If the value is other then use the next column
+              preprocessed.push(row[map[n]+1]);
+            }
+            else {
+              preprocessed.push(row[map[n]]);
+            }
+        }        
+        
+       // Push the data row by row
+       processed.push(preprocessed);
+       }
+      }
+      
+       // Print out the data sheet by sheet
+      if (processed != ""){
+       var range = summarySheet.getRange(j,1,processed.length,summaryHeader.length);
+       range.setValues(processed); //Set the value
+       j = j+processed.length; 
+       
+      } 
+    }
+  }
+ }
+ var updated = "The following sheets were updated " + update
+ Browser.msgBox(updated);
+}

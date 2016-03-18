@@ -1,0 +1,74 @@
+
+function Summary() {
+    var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+  for (var a = 1; a < 4; a++){
+  
+    var summarySheet = sheets[a];
+    var summaryHeader = summarySheet.getRange(1,1,1,summarySheet.getLastColumn()).getValues()[0];
+    var j = 3; // start setting results in row 3 
+
+    
+    // Get the column numbers for each variable
+    for(var s = 4; s < sheets.length; s++){ //Do this for each sheet starting at sheet 5
+      var processed = []; 
+      var map = [];
+      var sheetHeader = sheets[s].getRange(1,1,1,sheets[s].getLastColumn()).getValues()[0]; //Get the header for the sheet
+
+      //Map the header column numbers
+      for (var k = 0; k < summaryHeader.length; k++){    //Do this for each value in the Header on the summary page
+
+       if (sheetHeader.indexOf(summaryHeader[k]) == -1){ //If the column name is not in the list assign a temporary value of ZZ
+          map.push("ZZ");
+       }
+         else {
+           map.push(sheetHeader.indexOf(summaryHeader[k]));
+         }           
+       }
+
+      // Get all the data from the raw sheets
+      var sheet = sheets[s];
+      var rows = sheet.getDataRange();
+      var numRows = rows.getNumRows();
+      var values = rows.getValues();
+      
+      // Get only the data I want
+      for (var i = 1; i < numRows; i++) {
+        var row = values[i];
+        var preprocessed = [];
+        for (var n = 0; n < summaryHeader.length; n++){
+          if (map[n] == "ZZ"){ //If the value is ZZ then enter nothing in the cell
+            preprocessed.push("");
+          }
+            else if (row[map[n]] == "Other"){ // If the value is other then use the next column
+              preprocessed.push(row[map[n]+1]);
+            }
+            else {
+              preprocessed.push(row[map[n]]);
+            }
+        }
+        
+       // Push the data row by row
+       processed.push(preprocessed);
+       }
+      
+       // Print out the data sheet by sheet
+
+       var range = summarySheet.getRange(j,1,processed.length,summaryHeader.length);
+       range.setValues(processed); //Set the value
+       j = j+processed.length;   
+      } 
+  }        
+}
+
+
+
+function onOpen(e) {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var entries = [{
+    
+    name : "Summary",
+    functionName : "Run Summary Script"
+
+  }];
+  spreadsheet.addMenu("Summaries", entries);
+};

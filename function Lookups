@@ -1,0 +1,40 @@
+function Lookups() { //This function maps column numbers to lookup variables
+    var sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets();
+    var LookupSheet = sheets[0];
+    var lookupSheetHeader = LookupSheet.getRange(1,1,LookupSheet.getLastRow(),1).getValues();
+    var j = 3; // start setting results in column 2  
+    
+    // Get the column numbers for each variable
+    for(var i = 2; i < sheets.length; i++){ //Do this for each sheet starting at sheet 3
+      var sheetName = sheets[i].getSheetName(); //Get the sheetname of the current sheet
+      var range = LookupSheet.getRange(1,j,1,1).setValue(sheetName); //Set the sheetname in row 1 of the current column
+
+      var sheetHeader = sheets[i].getRange(1,1,1,sheets[i].getLastColumn()).getValues(); //Get the header for the sheet
+      
+      for (var k = 0; k < lookupSheetHeader.length; k++){    //Do this for each value in the Header on the summary page
+
+        if (sheetHeader[0].indexOf(lookupSheetHeader[k][0]) != -1){ //Do this if not false
+          
+          range = LookupSheet.getRange(k+1,j,1,1);
+          range.setValue(sheetHeader[0].indexOf(lookupSheetHeader[k][0])); //Set the value
+
+        }
+      }
+      
+     j++;
+     
+    }
+    
+   // var firstSheet = sheets[0];  //autoupdate the variable row numbers from the first sheet
+    var data = LookupSheet.getDataRange();
+    var numRows2 = data.getNumRows();
+    var values2 = data.getValues();
+    
+    var map = {}; //Hash table variable    
+    for (var i = 0; i < numRows2; i++) {
+      var rowData = values2[i];
+      if(rowData[1] != ""){
+        map[rowData[1]] = rowData[2];
+        }
+    }
+}

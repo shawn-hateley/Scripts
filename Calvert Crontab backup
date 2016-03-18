@@ -1,0 +1,25 @@
+################################################################################
+# This is a set of crontab entries to automatically generate data exports
+#
+# Created by: Ray Brunsting (ray@hakai.org)
+# Modified by: Ray Brunsting (ray@hakai.org)
+# Modified on: April 15, 2014
+#################################################################################
+05 02 * * *	$HOME/bin/publish-local-shared-file-lists >> $HOME/logs/publish-local-shared-file-lists.log 2>&1
+05 03 * * *	$HOME/bin/synchronize-shared-folders-to-CalvertRAID >> $HOME/logs/sync-CalvertRAID.log 2>&1
+* * * * *     	/bin/bash $HOME/hakai-data-tools/wunderground-tools/publish-to-wunderground-from-calvert >> $HOME/logs/publish-to-wunderground.log 2>&1
+1,11,21,31,41,51 * * * *	/bin/bash $HOME/hakai/server-tools/organize-and-synchronized-webcam-images.bash >> $HOME/logs/organize-and-synchronized-webcam-images.log 2>&1
+15 * * * *	/bin/bash $HOME/hakai-sensor-network/sensor-network-tools/backup-LoggerNet-data.bash >> $HOME/logs/backup-LoggerNet-data.log 2>&1
+45 0 * * *	/usr/bin/expect $HOME/hakai-it/network-tools/reboot-quadra-router.exp >> $HOME/logs/reboot-quadra-router.log 2>&1
+#################################################################################
+# Capture, summarize and copy network stats to AWS
+3,8,13,18,23,28,33,38,43,48,53,58 * * * *	/bin/bash $HOME/hakai-it/network-tools/log-router-statistics.bash >> $HOME/logs/log-router-statistics.log 2>&1
+7 * * * *	/bin/bash $HOME/hakai-it/network-tools/synchronize-network-statistics-to-aws.bash >> $HOME/logs/synchronize-network-statistics-to-aws.log 2>&1
+#################################################################################
+# Other miscellaneous stuff
+5 * * * *	/bin/bash $HOME/hakai-it/server-tools/synchronize-hakai-git-repos.bash >> $HOME/logs/synchronize-hakai-git-repos.log 2>&1
+10 1,7,13,19 * * *	/bin/bash $HOME/hakai/server-tools/synchronize-shared-folders-from-GoogleDrive >> $HOME/logs/synchronize-shared-folders-from-GoogleDrive.log 2>&1
+15 * * * *      rsync -avt /data/LoggerNet/calvert/*_DoseEvent.dat ~/Google\ Drive/Hakai_Sample_Data_Folders/calvert/ >> $HOME/logs/salt-dump-rsync.log 2>&1
+#
+# End of crontab
+#
