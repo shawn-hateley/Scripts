@@ -9,6 +9,7 @@ from pymodbus.client.sync import ModbusSerialClient as ModbusClient #initialize 
 from pymodbus.transaction import ModbusRtuFramer
 from datetime import datetime
 from statistics import mean
+from statistics import stdev
 
 #import logging
 #logging.basicConfig()
@@ -94,9 +95,9 @@ def writeMean(co2Runtotal,tempRuntotal,rhRuntotal):
 
     file = open(DATAFILE, "a")
     file.write('\n')
-    file.write('CO2  Average  %s\n' % (round(mean(co2Runtotal),2)))
-    file.write('Temp Average  %s\n' % (round(mean(tempRuntotal),2)))
-    file.write('RH   Average  %s\n' % (round(mean(rhRuntotal),2)))
+    file.write('CO2  Average and StDev %d %d\n' % (round(mean(co2Runtotal),2),round(stdev(co2Runtotal),2)))
+    file.write('Temp Average and StDev %d %d\n' % (round(mean(tempRuntotal),2),round(stdev(tempRuntotal),2)))
+    file.write('RH   Average and StDev %d %d\n' % (round(mean(rhRuntotal),2),round(stdev(rhRuntotal),2)))
     file.write('\n')
     file.close()
 
