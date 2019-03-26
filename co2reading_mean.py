@@ -41,6 +41,7 @@ def startMeasurement():
 
     #Print to file
     file = open(DATAFILE, "a")
+    file.write('\n')
     file.write('Starting Measurement sequence\n')
     file.write('\n')
     file.write('%s ----Air Pump On----\n' % (currentTime))
@@ -95,9 +96,8 @@ def writeMean(co2Runtotal,tempRuntotal,rhRuntotal):
 
     file = open(DATAFILE, "a")
     file.write('\n')
-    file.write('CO2  Average and StDev %d %d\n' % (round(mean(co2Runtotal),2),round(stdev(co2Runtotal),2)))
-    file.write('Temp Average and StDev %d %d\n' % (round(mean(tempRuntotal),2),round(stdev(tempRuntotal),2)))
-    file.write('RH   Average and StDev %d %d\n' % (round(mean(rhRuntotal),2),round(stdev(rhRuntotal),2)))
+    file.write('CO2_Avg, CO2_StDev, Temp_Avg, Temp_StDev, RH_Avg, RH_StDev\n')
+    file.write(' %s,%s,%s,%s,%s,%s\n' % (round(mean(co2Runtotal),2),round(stdev(co2Runtotal),2),round(mean(tempRuntotal),2),round(stdev(tempRuntotal),2),round(mean(rhRuntotal),2),round(stdev(rhRuntotal),2)))
     file.write('\n')
     file.close()
 
@@ -138,7 +138,7 @@ def main(args):
         connection = client.connect()
         if connection:
             for x in range(0, PUMP_TIME, 30): #take a measurement every 30 secs until the pump and sensor time is over
-                outputList = (recordData(client))
+                outputList = (recordData(client)) #return the co2, temp and rh data after every call and append it to list variables
                 co2Runtotal.append(outputList[0])
                 tempRuntotal.append(outputList[1])
                 rhRuntotal.append(outputList[2])
