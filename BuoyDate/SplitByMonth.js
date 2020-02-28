@@ -1,5 +1,5 @@
 var fs = require('fs');
-var path = "/Users/shawnhateley/Projects/Test_Data/mapCO2flashdata_May2018-May2019_Fixed_Dates.txt"
+var path = "/Users/shawnhateley/Projects/Test_Data/KCBuoyData20190501-20191126.txt"
 var arrayPath = "/Users/shawnhateley/Projects/Test_Data/months.txt"
 var text = []
 
