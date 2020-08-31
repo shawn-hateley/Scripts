@@ -15,7 +15,7 @@ function takePicture() {
   });
 
   var cmd = 'ffmpeg -loglevel fatal -rtsp_transport tcp -i "rtsp://10.10.8.5:554/s0" -r 1 -vframes 1 ' + folderPath + "/" + name; //build ffmpeg command with arguments
-
+//var cmd = ‘wget -O ‘+ folderPath + “/” + name + ’ http://10.12.8.34/snap.jpeg’;
   //console.log(cmd)
   exec(cmd, function(error, stdout, stderr) {  // call ffmpeg to capture image from stream
     // command output is in stdout
