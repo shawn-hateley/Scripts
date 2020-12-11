@@ -1,0 +1,9 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>302 Found</title>
+</head><body>
+<h1>Found</h1>
+<p>The document has moved <a href="https://accounts.google.com/o/oauth2/v2/auth?response_type=code&amp;scope=email&amp;client_id=972372147921-fuucp2pt8a6h9masanstuvbvepg4ae9f.apps.googleusercontent.com&amp;state=UfoRhVwyMizrgHHlE4Bhn6FlvhI&amp;redirect_uri=https%3A%2F%2Fhecate.hakai.org%2Fauth%2Foauth2callback&amp;nonce=NqUnXAtXmNCmmKMB8M5UM1xqBtmixtQC_1KEF0nEDX8&amp;prompt=select_account">here</a>.</p>
+<hr>
+<address>Apache/2.4.18 (Ubuntu) Server at hecate.hakai.org Port 443</address>
+</body></html>
