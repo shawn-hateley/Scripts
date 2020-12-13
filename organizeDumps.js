@@ -1,11 +1,8 @@
 //Read the header of the master file
 const lineByLine = require('n-readlines');
-const masterDirectory = "/Users/shawnhateley/Projects/MasterFileList"; //US data files
-const searchDirectory = "/Users/shawnhateley/Projects/LatestData" //DS data files
-var glob = require("glob") //search directory for files
+const masterDirectory = "/Users/shawnhateley/Projects/MasterFileList"; //collated UpStream data files as produced by readline.js
+const searchDirectory = "/Users/shawnhateley/Projects/LatestData" //collated DownStream data files as produced by readline.js
 const fs = require('fs');
-//var SSN626,SSN703,SSN844,SSN1015;
-//var stations = [626,703,844,1015];
 
 let masterList = fs.readdirSync(masterDirectory); //get the list of all the US files
 console.log(masterList);
@@ -14,12 +11,9 @@ console.log(masterList);
 for (var k = 0; k < masterList.length; k++) {
   var masterFileName = masterDirectory + "/" + masterList[k];
   var master = new lineByLine(masterFileName);
-  var masterEventList= getEventID(master); //Get the master file header for comparison
+  var masterEventList= getEventID(master); //call the getEventID function
 
-  //console.log(masterEventList)
-  fs.writeFileSync(masterFileName + ".event.csv",masterEventList);
-  //call function to get DS events and write them to files
-  //getDSEvents(masterEventList)
+  fs.writeFileSync(masterFileName + ".event.csv",masterEventList); //Write the output of the getEventID function
 }
 
 
@@ -30,10 +24,10 @@ function getEventID(fileName){ //function to read the EventID from each of the U
 
   while (line = fileName.next()) {
       //line = fileName.next()
-      if (isNaN(line.toString('ascii').split(",")[2])){
+      if (isNaN(line.toString('ascii').split(",")[2])){ //check if the line is the header or blank
         continue
       } else {
-        outputArray.push(line.toString('ascii').split(",")[2]);
+        outputArray.push(line.toString('ascii').split(",")[2]); //create array of the Event Ids
       }
   }
   return outputArray;
