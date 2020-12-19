@@ -9,16 +9,16 @@ const fs = require('fs');
 
 //var stations = ["SSN703","SSN844","SSN626","SSN1015"]
 //var sites = ["US","DS","AS"]
-let directory_name = "/Users/shawnhateley/Projects/MasterFileList";
+let directory_name = "/Users/shawnhateley/Projects/Test_Data/MasterFileList";
 let masterList = fs.readdirSync(directory_name);
 console.log(masterList);
 
 //Get the list of files that match the station
 for (var k = 0; k < masterList.length; k++) {
+  if (masterList[k].includes(".DS")) continue //skip mac .DS files
   var masterFileName = directory_name + "/" + masterList[k];
   var master = new lineByLine(masterFileName);
   var masterHeader = readHeader(master); //Get the master file header for comparison
-
   let fileList = {};
   fileList['files']=glob.sync("/Users/shawnhateley/Projects/Test_Data/saltDose/**/" + masterList[k], {});
   console.log(fileList);
@@ -28,6 +28,7 @@ for (var k = 0; k < masterList.length; k++) {
 
 function checkFiles(fileList){
   for (var i = 0; i < fileList.files.length; i++){ //do for each file in the list
+    if (fileList.files[i].includes(".DS")) continue //skip mac .DS files
     var newFile = new lineByLine(fileList.files[i]); //check the header against the master. If it doesn't match, skip
     var newFileHeader = readHeader(newFile);
 
