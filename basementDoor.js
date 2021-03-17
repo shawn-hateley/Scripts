@@ -32,9 +32,16 @@ pushButton.watch(function (err, value) { //Watch for hardware interrupts on push
                 console.log(timeStamp + 'Turning Off');
                 doorStatus = 0;
   }
-  setTimeout(function(){
-        plug.getPowerState() //check door state and confirm light state.
-  });
+  //setTimeout(function(){
+  //      plug.getPowerState() //check door state and confirm light state.
+  //});
+});
+
+pushButton.read((err,value) => {
+        if (err) {
+                throw err;
+        }
+        console.log(value);
 });
 
 function unexportOnClose() { //function to run when exiting program
