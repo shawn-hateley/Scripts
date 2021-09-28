@@ -1,12 +1,13 @@
-//Read the US processed file and find all events from the DS data. Create individual event files.
+//Read the US processed file and find all events from the DS data. Create individual event files. Requires an up to date US processed file.
 const lineByLine = require('n-readlines'); //This is the library to read thr file line by line
 const fs = require('fs'); //file system for appending the files
 var glob = require("glob");
 
-var rawDirectoryName = "/Users/shawnhateley/Projects/Test_Data/saltDose/" //Raw data directory
+var rawDirectoryName = "/home/shawn/saltDose/" //Raw data directory on PC
+//var rawDirectoryName = "/Users/shawnhateley/Projects/Test_Data/saltDose/" //Raw data directory on macBook
 //var rawDirectoryName = "/data/www/saltDose/" //Raw data directory on hecate
-var directory_name = rawDirectoryName + "CollatedData/Stations/"; //Read from the collated data / Stations directories. Get names from dir.
-var stationList = fs.readdirSync(directory_name); //Get the folder names of the stations. SSN626, SSN703, etc
+var stationDirectory = rawDirectoryName + "CollatedData/Stations/"; //Read from the collated data / Stations directories. Get names from dir.
+var stationList = fs.readdirSync(stationDirectory); //Get the folder names of the stations. SSN626, SSN703, etc
 console.log(stationList);
 
 //Get the list of files that match the station
@@ -18,9 +19,9 @@ for (var k = 0; k < stationList.length; k++) {
   fileList = glob.sync(rawDirectoryName + "/**/" + stationName + "DS_DoseEvent.*") //get a list of all of the ds dose event files from all directories
   console.log(fileList);
 
-  var processedUSFile = directory_name + stationName + "/" + stationName + "US_DoseEvent.dat.csv" //This is the master list of events
+  var processedUSFile = stationDirectory + stationName + "/" + stationName + "US_DoseEvent.dat.csv" //This is the master list of events
   if (stationName == "SSN626"){
-     processedUSFile = directory_name + stationName + "/" + stationName + "AS_DoseEvent.dat.csv";
+     processedUSFile = stationDirectory + stationName + "/" + stationName + "AS_DoseEvent.dat.csv";
    }
   console.log(processedUSFile);
 
@@ -58,8 +59,8 @@ function matchLine(matchFile){
 
     eventID = lineText.split(",")[2]; //get event id so it can be used to create individual ds event files
     console.log(eventID)
-    fs.writeFileSync(directory_name + stationName + "/" + eventID + ".csv",""); //create event file. Deletes old versions if they exist
-    console.log("creating file  " + directory_name + stationName + "/" + eventID + ".csv");
+    fs.writeFileSync(stationDirectory + stationName + "/" + eventID + ".csv",""); //create event file. Deletes old versions if they exist
+    console.log("creating file  " + stationDirectory + stationName + "/" + eventID + ".csv");
 
 
     for (var j = 0; j < fileList.length; j++){
@@ -85,7 +86,7 @@ function matchEvent(eventID,rawDS){
     eventText = eventLine.toString('ascii'); //convert the line object to a string
     //console.log(eventID);
     if (lineNumber < 4){ //Create header for each new file using the current file
-      //fs.appendFileSync(directory_name + stationName + "/" + eventID + ".csv", eventText + '\n');
+      //fs.appendFileSync(stationDirectory + stationName + "/" + eventID + ".csv", eventText + '\n');
       header[lineNumber] = (eventText + '\n')
       lineNumber++;
       continue
@@ -94,12 +95,12 @@ function matchEvent(eventID,rawDS){
     if (eventText.split(",")[2].replace(/["]+/g, '') == eventID){
       if (headerReset == 0){
         for (var i = 0; i < 4; i++){
-          fs.appendFileSync(directory_name + stationName + "/" + eventID + ".csv", header[i]);
+          fs.appendFileSync(stationDirectory + stationName + "/" + eventID + ".csv", header[i]);
         }
         headerReset = 1;
       }
       console.log("matched DS Event ID");
-      fs.appendFileSync(directory_name + stationName + "/" + eventID + ".csv", eventText + '\n');
+      fs.appendFileSync(stationDirectory + stationName + "/" + eventID + ".csv", eventText + '\n');
       console.log(eventText + '\n');
       reset = 1;
     }else if (reset == 1){
