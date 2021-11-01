@@ -1,11 +1,11 @@
-//Read the header of the processed file to compare with the header of the raw file. If it matches, then find the last entry in the processed file
-//to compare with the raw file. Append all remaining lines from the raw file to the processed file.
+//Read the header of the processedUS file to compare with the header of the rawUS file. If it matches, then find the last entry in the processedUS file
+//to compare with the rawUS file. Append all remaining lines from the rawUS file to the processedUS file.
 const lineByLine = require('n-readlines'); //This is the library to read thr file line by line
 const fs = require('fs'); //file system for appending the files
 
-var rawDirectoryName = "/home/shawn/saltDose/" //Raw data directory on PC
-//var rawDirectoryName = "/Users/shawnhateley/Projects/Test_Data/saltDose/" //Raw data directory on macBook
-//var rawDirectoryName = "/data/www/saltDose/" //Raw data directory on hecate
+//var rawDirectoryName = "/home/shawn/saltDose/" //rawUS data directory on PC
+var rawDirectoryName = "/Users/shawnhateley/Projects/Test_Data/saltDose/" //rawUS data directory on macBook
+//var rawDirectoryName = "/data/www/saltDose/" //rawUS data directory on hecate
 var stationDirectory = rawDirectoryName + "CollatedData/Stations/"; //Read from the collated data / Stations directories. Get names from dir.
 var stationList = fs.readdirSync(stationDirectory); //Get the folder names of the stations. SSN626, SSN703, etc
 console.log(stationList);
@@ -17,25 +17,26 @@ for (var k = 0; k < stationList.length; k++) {
   var processedUSFile = stationDirectory + stationName + "/" + stationName + "US_DoseEvent.dat.csv" // "/home/shawn/saltDose/CollatedData/Stations/SSN703/SSN703US_DoseEvent.dat.csv"
   if (stationName == "SSN626") processedUSFile = stationDirectory + stationName + "/" + stationName + "AS_DoseEvent.dat.csv";
 
-  var rawUSFileName = rawDirectoryName + processedUSFile.split("/").pop(); //take the processedUSFile and combine it with the raw directory.  "/home/shawn/saltDose/SSN703US_DoseEvent.dat.csv"
+  var rawUSFileName = rawDirectoryName + processedUSFile.split("/").pop(); //take the processedUSFile and combine it with the rawUS directory.  "/home/shawn/saltDose/SSN703US_DoseEvent.dat.csv"
   var rawDSFileName = rawDirectoryName + stationName + "DS_DoseEvent.dat.csv"; //"/home/shawn/saltDose/SSN703DS_DoseEvent.dat.csv"
 
-  var processed = new lineByLine(processedUSFile); //creates new object to read individual lines
-  var raw = new lineByLine(rawUSFileName);
+  var processedUS = new lineByLine(processedUSFile); //creates new object to read individual lines
+  var rawUS = new lineByLine(rawUSFileName);
   var rawDS = new lineByLine(rawDSFileName);
-  var processedHeader = readHeader(processed); //Get the master file header for comparison. Only the second line of the file is returned
-  var rawHeader = readHeader(raw);
+  var processedHeader = readHeader(processedUS); //Get the master file header for comparison. Only the second line of the file is returned
+  var rawHeader = readHeader(rawUS);
 
   if (processedHeader == rawHeader.replace(/["]+/g, '')){ //strip away double quotes from the data before comparing. Make sure headers are the same before adding new rows
-    var lastProcessedLine = lastLine(processed); //Get the last line of the processed US_DoseEvent file
+    var lastProcessedLine = lastLine(processedUS); //Get the last line of the processedUS US_DoseEvent file
 
     console.log("header match")
-	console.log("Opening File " + rawUSFileName);
-    matchLine(raw); //Find the line that matches the last line from the processed US_DoseEvent file
+	  console.log("Opening File " + rawUSFileName);
+    //console.log("Last Processed Line " + lastProcessedLine);
+    matchLine(rawUS); //Find the line that matches the last line from the processedUS US_DoseEvent file
   }else {
     console.log("No header Match");
-	console.log(processedHeader)
-	console.log(rawHeader.replace(/["]+/g, ''))
+	//console.log(processedHeader)
+	//console.log(rawHeader.replace(/["]+/g, ''))
   }
 
 }
@@ -67,7 +68,7 @@ function lastLine(fileName){ //Function to return the last line of a file. This 
   return lineText.toString('ascii');
 }
 
-function matchLine(matchFile){ //matchFile is the raw US DoseEvent file
+function matchLine(matchFile){ //matchFile is the rawUS US DoseEvent file
   var line;
   var lineWrite = 0;
   var lineText;
@@ -77,13 +78,13 @@ function matchLine(matchFile){ //matchFile is the raw US DoseEvent file
 
   while (line = matchFile.next()){ //iterate over all lines in the US doseEvent file
       lineText = line.toString('ascii').replace(/["]+/g, ''); //convert the line object to a string and strip the double quotes
-	  
+
 
       if (lineWrite == 1){ //append the current line to the master file
         //fs.appendFileSync(processedUSFile,'\n') //make sure the newest line starts below the last one
         fs.appendFileSync(processedUSFile,'\n' + lineText)
         console.log("Appending");
-        console.log(processedUSFile + lineText + '\n')
+        console.log(processedUSFile + " " + lineText + '\n')
 
         eventID = lineText.split(",")[2]; //get event id so it can be used to create individual ds event files
         console.log(eventID)
@@ -103,8 +104,8 @@ function matchLine(matchFile){ //matchFile is the raw US DoseEvent file
         lineWrite = 1; //Set to 1 so the file appending can begin with the next line
       }else{
 		console.log("No Match");
-		console.log("Raw " + lineText.split(",")[2]);
-		console.log("Processed " + lastProcessedLine.split(",")[2]);
+		//console.log("rawUS " + lineText.split(",")[2]);
+		//console.log("processedUS " + lastProcessedLine.split(",")[2]);
 	  }
 
   }
