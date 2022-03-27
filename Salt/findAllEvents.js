@@ -1,10 +1,10 @@
-//Read the US processed file and find all events from the DS data. Create individual event files. Requires an up to date US processed file.
+//Read the US processedUS file and find all events from the DS data. Create individual event files. Requires an up to date US processedUS file.
 const lineByLine = require('n-readlines'); //This is the library to read thr file line by line
 const fs = require('fs'); //file system for appending the files
 var glob = require("glob");
 
-var rawDirectoryName = "/home/shawn/saltDose/" //Raw data directory on PC
-//var rawDirectoryName = "/Users/shawnhateley/Projects/Test_Data/saltDose/" //Raw data directory on macBook
+//var rawDirectoryName = "/home/shawn/saltDose/" //Raw data directory on PC
+var rawDirectoryName = "/Users/shawnhateley/Projects/Test_Data/saltDose/" //Raw data directory on macBook
 //var rawDirectoryName = "/data/www/saltDose/" //Raw data directory on hecate
 var stationDirectory = rawDirectoryName + "CollatedData/Stations/"; //Read from the collated data / Stations directories. Get names from dir.
 var stationList = fs.readdirSync(stationDirectory); //Get the folder names of the stations. SSN626, SSN703, etc
@@ -28,13 +28,13 @@ for (var k = 0; k < stationList.length; k++) {
   //var rawUSFileName = rawDirectoryName + processedUSFile.split("/").pop(); //take the processedUSFile and combine it with the raw directory.
   //var rawDSFileName = rawDirectoryName + stationName + "DS_DoseEvent.dat.csv";
 
-  var processed = new lineByLine(processedUSFile); //creates new object to read individual lines
+  var processedUS = new lineByLine(processedUSFile); //creates new object to read individual lines
   //var raw = new lineByLine(rawUSFileName);
   //var rawDS = new lineByLine(rawDSFileName);
-  //var processedHeader = readHeader(processed); //Get the master file header for comparison. Only the second line of the file is returned
+  //var processedHeader = readHeader(processedUS); //Get the master file header for comparison. Only the second line of the file is returned
   console.log("calling matchline function");
 
-  matchLine(processed); //Find the line that matches the last line from the master
+  matchLine(processedUS); //Find the line that matches the last line from the master
 
  }
 
@@ -59,6 +59,8 @@ function matchLine(matchFile){
 
     eventID = lineText.split(",")[2]; //get event id so it can be used to create individual ds event files
     console.log(eventID)
+    if (isNaN(eventID)) continue; //Check to see if the EventID is a lineNumber
+
     fs.writeFileSync(stationDirectory + stationName + "/" + eventID + ".csv",""); //create event file. Deletes old versions if they exist
     console.log("creating file  " + stationDirectory + stationName + "/" + eventID + ".csv");
 

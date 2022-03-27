@@ -87,6 +87,7 @@ function matchLine(matchFile){ //matchFile is the rawUS US DoseEvent file
         console.log(processedUSFile + " " + lineText + '\n')
 
         eventID = lineText.split(",")[2]; //get event id so it can be used to create individual ds event files
+        if (isNaN(eventID)) continue; //Check to see if the EventID is a lineNumber
         console.log(eventID)
 /*
         fs.writeFileSync(stationDirectory + stationName + "/" + eventID + ".csv",""); //create event file. Deletes old versions if they exist
