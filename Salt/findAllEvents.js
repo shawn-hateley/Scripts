@@ -97,12 +97,12 @@ function matchEvent(eventID,rawDS){
     if (eventText.split(",")[2].replace(/["]+/g, '') == eventID){
       if (headerReset == 0){
         for (var i = 0; i < 4; i++){
-          fs.appendFileSync(stationDirectory + stationName + "/" + eventID + ".csv", header[i]);
+         fs.appendFileSync(stationDirectory + stationName + "/" + eventID + ".csv", header[i]);
         }
         headerReset = 1;
       }
       console.log("matched DS Event ID");
-      fs.appendFileSync(stationDirectory + stationName + "/" + eventID + ".csv", eventText + '\n');
+        fs.appendFileSync(stationDirectory + stationName + "/" + eventID + ".csv", eventText + '\n');
       console.log(eventText + '\n');
       reset = 1;
     }else if (reset == 1){
