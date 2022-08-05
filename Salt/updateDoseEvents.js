@@ -1,5 +1,10 @@
 //Read the header of the processedUS file to compare with the header of the rawUS file. If it matches, then find the last entry in the processedUS file
 //to compare with the rawUS file. Append all remaining lines from the rawUS file to the processedUS file.
+
+//This script needs to check all directories and deal with file changes. Archiving the data will create new files and the check for previous lines will fail.
+//I could check for previous files and if that is last line in a file, then copy all newer lines. (check the dates)
+
+
 const lineByLine = require('n-readlines'); //This is the library to read thr file line by line
 const fs = require('fs'); //file system for appending the files
 
@@ -89,12 +94,7 @@ function matchLine(matchFile){ //matchFile is the rawUS US DoseEvent file
         eventID = lineText.split(",")[2]; //get event id so it can be used to create individual ds event files
         if (isNaN(eventID)) continue; //Check to see if the EventID is a lineNumber
         console.log(eventID)
-/*
-        fs.writeFileSync(stationDirectory + stationName + "/" + eventID + ".csv",""); //create event file. Deletes old versions if they exist
-        console.log("creating file  " + stationDirectory + stationName + "/" + eventID + ".csv");
 
-        matchEvent(eventID); //call function to match and copy DS event data
-*/
       }else{
         console.log("Skipping");
       }
@@ -111,37 +111,3 @@ function matchLine(matchFile){ //matchFile is the rawUS US DoseEvent file
 
   }
 }
-/*
-function matchEvent(eventID){
-  var eventLine;
-  var eventText;
-  var reset = 0;
-  var lineNumber = 0;
-
-  //console.log("Starting matchEvent Function")
-
-  while (eventLine = rawDS.next()){ //iterate over all the lines in the DS doseevent file
-    eventText = eventLine.toString('ascii').replace(/["]+/g, ''); //convert the line object to a string and strip the double quotes
-    //console.log(eventID);
-    if (lineNumber < 4){ //Create header for each new file using the current file
-      fs.appendFileSync(stationDirectory + stationName + "/" + eventID + ".csv", eventText + '\n');
-      //header.push(line.toString('ascii'))
-      lineNumber++;
-      continue
-    }
-
-    if (eventText.split(",")[2] == eventID){
-      console.log("matched DS Event ID");
-      fs.appendFileSync(stationDirectory + stationName + "/" + eventID + ".csv", eventText + '\n');
-      console.log(eventText + '\n');
-      reset = 1;
-    }else if (reset == 1){
-      eventLine = rawDS.reset();
-      console.log("Reseting File");
-      break;
-    }else{
-      console.log("Skipping DS");
-    }
-  }
-}
-*/

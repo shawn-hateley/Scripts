@@ -1,4 +1,6 @@
 //Read the US processedUS file and find all events from the DS data. Create individual event files. Requires an up to date US processedUS file.
+
+//Need to skip exisiting files to speed this up
 const lineByLine = require('n-readlines'); //This is the library to read thr file line by line
 const fs = require('fs'); //file system for appending the files
 var glob = require("glob");
@@ -25,13 +27,13 @@ for (var k = 0; k < stationList.length; k++) {
    }
   console.log(processedUSFile);
 
-  //var rawUSFileName = rawDirectoryName + processedUSFile.split("/").pop(); //take the processedUSFile and combine it with the raw directory.
-  //var rawDSFileName = rawDirectoryName + stationName + "DS_DoseEvent.dat.csv";
+  var rawUSFileName = rawDirectoryName + processedUSFile.split("/").pop(); //take the processedUSFile and combine it with the raw directory.
+  var rawDSFileName = rawDirectoryName + stationName + "DS_DoseEvent.dat.csv";
 
   var processedUS = new lineByLine(processedUSFile); //creates new object to read individual lines
-  //var raw = new lineByLine(rawUSFileName);
-  //var rawDS = new lineByLine(rawDSFileName);
-  //var processedHeader = readHeader(processedUS); //Get the master file header for comparison. Only the second line of the file is returned
+  var raw = new lineByLine(rawUSFileName);
+  var rawDS = new lineByLine(rawDSFileName);
+  var processedHeader = readHeader(processedUS); //Get the master file header for comparison. Only the second line of the file is returned
   console.log("calling matchline function");
 
   matchLine(processedUS); //Find the line that matches the last line from the master
