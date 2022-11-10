@@ -33,7 +33,7 @@ for (var k = 0; k < stationList.length; k++) {
   var processedUS = new lineByLine(processedUSFile); //creates new object to read individual lines
   var raw = new lineByLine(rawUSFileName);
   var rawDS = new lineByLine(rawDSFileName);
-  var processedHeader = readHeader(processedUS); //Get the master file header for comparison. Only the second line of the file is returned
+//  var processedHeader = readHeader(processedUS); //Get the master file header for comparison. Only the second line of the file is returned
   console.log("calling matchline function");
 
   matchLine(processedUS); //Find the line that matches the last line from the master
