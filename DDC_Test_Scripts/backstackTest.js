@@ -7,17 +7,18 @@ const client = new bacnet({adpuTimeout: 6000});
 client.on('iAm', (device) => {
   console.log('address: ', device.address);
   console.log('deviceId: ', device.deviceId);
-  console.log('maxAdpu: ', device.maxAdpu);
-  console.log('segmentation: ', device.segmentation);
-  console.log('vendorId: ', device.vendorId);
 });
-client.whoIs();
+//client.whoIs();
 
 // Read Device Object
-/* const requestArray = [{
-  objectId: {type: 8, instance: 4194303},
+/*  const requestArray = [{
+  objectId: {type: 8, instance: 400},
   properties: [{id: 8}]
 }];
-client.readPropertyMultiple('192.168.1.43', requestArray, (err, value) => {
+client.readPropertyMultiple('10.10.126.29', requestArray, (err, value) => {
   console.log('value: ', value);
-}); */
+});  */
+
+client.readProperty('10.10.126.29', {type: 0, instance: 1}, 85, (err, value) => {
+  console.log('value: ', value.values[0].value);
+});

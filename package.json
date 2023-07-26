@@ -1,5 +1,11 @@
 {
   "dependencies": {
-    "bacstack": "^0.0.1-beta.14"
+    "bacstack": "^0.0.1-beta.14",
+    "express": "^4.18.2",
+    "jsmodbus": "^4.0.6",
+    "modbus-serial": "^8.0.11",
+    "net": "^1.0.2",
+    "node-zabbix-sender": "^1.1.0",
+    "request": "^2.88.2"
   }
 }
