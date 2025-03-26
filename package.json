@@ -1,19 +1,14 @@
 {
   "dependencies": {
-<<<<<<< Updated upstream
+    "axios": "^1.7.7",
     "bacstack": "^0.0.1-beta.14",
+    "cheerio": "^1.0.0",
+    "csv-parser": "^3.0.0",
     "express": "^4.18.2",
     "jsmodbus": "^4.0.6",
     "modbus-serial": "^8.0.11",
     "net": "^1.0.2",
     "node-zabbix-sender": "^1.1.0",
     "request": "^2.88.2"
-=======
-    "modbus-serial": "^8.0.17",
-    "modbus-stream": "^0.46.0",
-    "modbus-tcp": "^0.4.13",
-    "node-pid-controller": "^1.0.1",
-    "sleep-promise": "^9.1.0"
->>>>>>> Stashed changes
   }
 }
