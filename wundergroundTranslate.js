@@ -1,7 +1,7 @@
 //Open lastProcessed file 
 //Read the date from the file. This is the date and time of the last record that was processed
 
-//Open onehour.dat file
+//Open fiveMin.dat file
 //Read the date of the last measurement and compare to the lastProcessed file. If younger, then proceed.
 //Read the header to find the location of each measurement
 //Match each measurement needed and put in variable
@@ -14,11 +14,17 @@ const fs = require('fs');
 const { parse } = require("csv-parse");
 var moment = require('moment');
 
-//File names and paths
-var lastProcessedFile = "/Users/shawnhateley/Projects/Test_Data/lastProcessed"
-var oneHourFile = "/Users/shawnhateley/Projects/Test_Data/OrfordBuoy_FiveMin.dat"
+//File names and paths. /data = /mnt/tank/Loggernet on Quadra NAS
+//var lastProcessedFile = "/Users/shawnhateley/Projects/Test_Data/lastProcessed"
+//var lastProcessedFile ="/data/scripts/wunderground-tools/lastProcessed"
+var lastProcessedFile = process.env.LAST_PROCESSED_FILE
+//var fiveMinFile = "/Users/shawnhateley/Projects/Test_Data/OrfordBuoy_FiveMin.dat"
+//var fiveMinFile = "/data/LoggerNet/OrfordData/OrfordBuoy_FiveMin.dat"
+var fiveMinFile = process.env.FIVE_MIN_FILE
 var outputFileName = "OrfordBuoy_Wunderground_"
-var outputPath = "/Users/shawnhateley/Projects/Test_Data/"
+//var outputPath = "/Users/shawnhateley/Projects/Test_Data/"
+//var outputPath = "/data/Wunderground.unprocessed"
+var outputPath = process.env.OUTPUT_PATH
 var outputFile;
 
 var lastProcessedDate;
@@ -43,7 +49,7 @@ lastProcessedDate = new Date(lastProcessedRaw) //convert string to date
 
 console.log("Last Processed Date " + lastProcessedDate);
 
-fs.createReadStream(oneHourFile)  //read in the data from the FiveMin dat file, one row at a time
+fs.createReadStream(fiveMinFile)  //read in the data from the FiveMin dat file, one row at a time
   .pipe(parse({ delimiter: ",", from_line: 2 }))
   .on("data", function (row) {
     //match headers with output of row. if match, then get position. 
