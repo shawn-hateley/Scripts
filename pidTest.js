@@ -7,13 +7,27 @@ let ctr = new Controller({
   dt: 1
 });
 
+var speed;
+var speedIncrease;
+
+function measureFromSomeSensor(){
+    //speedometer output
+    console.Log(speed);
+    return speed;
+}
+
+function applyInputToActuator(input){
+    speedIncrease = 
+}
+
+
 ctr.setTarget(120); // 120km/h
 
 let correction = ctr.update(110); // 110km/h is the current speed
 
 let goalReached = false
 while (!goalReached) {
-  let output = 115
+  let output = measureFromSomeSensor();
   let input  = ctr.update(output);
   applyInputToActuator(input);
   goalReached = (input === 0); // in the case of continuous control, you let this variable 'false'

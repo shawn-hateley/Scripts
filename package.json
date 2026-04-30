@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@bacnet-js/client": "^3.3.0",
     "axios": "^1.7.7",
     "bacstack": "^0.0.1-beta.14",
     "cheerio": "^1.0.0",

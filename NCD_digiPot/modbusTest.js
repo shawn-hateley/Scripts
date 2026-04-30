@@ -1,3 +1,15 @@
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Promise Rejection: (ignored)');
+});
+
+process.on('uncaughtException', (err) => {
+    if (err.code === 'ECONNRESET') {
+        console.log('Uncaught ECONNRESET (ignored)');
+        return;
+    }
+    console.error('Uncaught Exception:', err);
+});
+
 // Import the modbus-serial library
 const ModbusRTU = require('modbus-serial');
 
@@ -5,12 +17,22 @@ const ModbusRTU = require('modbus-serial');
 const client = new ModbusRTU();
 
 // Define connection parameters
-const HOST = '10.12.16.13'; // Replace with the IP address of your Modbus server
+const HOST = '10.12.254.13'; // Replace with the IP address of your Modbus server
 const PORT = 502;             // Replace with the port number of your Modbus server
 const REGISTER_ADDRESS = 9219;   // Replace with the address of the input register you want to read
 
 // Function to read input register
 async function readInputRegister() {
+    const client = new ModbusRTU();
+
+    client.on("error", (err) => {
+    if (err.code === "ECONNRESET") {
+        console.log("Modbus socket reset (normal for this device)");
+        return;
+    }
+    console.error("Modbus socket error:", err);
+    });
+
     try {
         // Connect to the Modbus server
         await client.connectTCP(HOST, { port: PORT });

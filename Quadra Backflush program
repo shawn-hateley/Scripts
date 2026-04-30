@@ -1,0 +1,53 @@
+//Run backflush at 12:01am, 6:01am, 12:01pm and 6:01pm
+//Perhaps use a schedule for this?
+
+//Run a backflush daily at 10am
+//First check if a backflush has already run
+If Daily_Backflush_Done = Off Then
+  If Hours > 9 Then //Only run a backflush after 10am
+  //Check if the Lab tank is above 42" and call for water is off
+    If (LAB_TANK_2_LEVEL > 42) And (Lab_Tank_Call_For_Water OffFor 5M) Then
+      AZUD_BackFlush_Control = On
+      Call_For_Backflush_BV = On
+      Daily_Backflush_Done = On
+    End If
+  End If
+End If
+
+
+
+//Check if Call for backflush active and determine which filter pump is lead
+If Call_For_Backflush_BV = On Then
+  //Filter 1
+  If FILTER_PUMP_LEAD = FILTER_1 Then
+    FILTER_1_PUMP_CONTROL = On
+    FILTER_1_PUMP_SPD = 50
+  End If
+
+End If
+
+If Call_For_Backflush_BV = On Then
+  //Filter 2
+  If FILTER_PUMP_LEAD = FILTER_2 Then
+    FILTER_2_PUMP_CONTROL = On
+    FILTER_2_PUMP_SPD = 50
+  End If
+
+End If
+
+
+//Turn off AZUD_Backflush 30 seconds after turning it on
+If AZUD_BackFlush_Control OnFor 30S Then
+  AZUD_BackFlush_Control = Off
+End If
+
+//Reset the Call_For_Backflush to Off once backflush complete
+If (Daily_Backflush_Done OnFor 1M) And (Filter_Backflush_Active = Off) Then
+  Call_For_Backflush_BV = Off
+End If
+
+
+//Reset Daily Backflush at 1am 
+IfOnce Hours = 1 And Daily_Backflush_Done = On Then
+   Daily_Backflush_Done = Off
+End If

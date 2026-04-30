@@ -34,9 +34,9 @@ const DELAY = 500; // milliseconds
 const modbusClient = new ModbusRTU()
 const modbusPort = 502
 //const modbusIP = "10.12.16.13" //Tank 3 Walchem
-const tempRegister = 9219
+const temperatureRegister = 9219
 const tankIP = tankNumber + 10;
-const modbusIP = "10.12.16." + tankIP //Tank 3 Walchem
+const modbusIP = "10.12.254." + tankIP // Walchem IP
 
 //Dwyer setpoints
 const dwyerSP = 20;
@@ -48,14 +48,17 @@ async function getModbusTemperature() {
     try {
         // Connect to the Modbus server
 
-        await modbusClient.connectTCP(modbusIP, { port: modbusPort });
+		console.log("Connecting to ", modbusIP)
+		modbusClient.setTimeout(500); //time to wait for Walchem to respond
 
+        await modbusClient.connectTCP(modbusIP, { port: modbusPort });
+		
         // Set the unit ID (typically 1 for Modbus TCP)
         modbusClient.setID(1);
 
         // Read the input register
-        const response = await modbusClient.readInputRegisters(tempRegister, 2);
-
+        const response = await modbusClient.readInputRegisters(temperatureRegister, 2);
+		//console.log("Response ", response);
         // Extract the value from the response
 
 		var buffer = new ArrayBuffer(4);
@@ -66,13 +69,13 @@ async function getModbusTemperature() {
 		var value = view.getFloat32(0, false).toFixed(2);
 		
         // Print the value
-        console.log(`Value of input register at address ${tempRegister}: ${value}`);
+        console.log(`Value of input register at address ${temperatureRegister}: ${value}`);
 
 		calculateNCDValue(value);
 		
     } catch (err) {
         // Handle errors
-        console.error('Error reading input register:', err);
+        console.error('Error reading from Walchem', err);
     } finally {
         // Close the connection
         modbusClient.close();
@@ -96,32 +99,36 @@ function calculateNCDValue(currentTemp) {
 	currentTemp = parseFloat(currentTemp);
 
 	console.log("Current Temp = ", currentTemp)
-	var tempDiff = setPoint - currentTemp;
+	var tempDiff = parseFloat(setPoint - currentTemp).toFixed(2); 
 	console.log("Current Setpoint = ", setPoint)
+	console.log("Current Temperature Difference = ", tempDiff)
 
-	var result = setPointDiff + currentTemp
-	result = Math.round(3.27 * result + 32)
-	console.log("NCD Command = ", result)
+	var NCDCommand = setPointDiff + currentTemp
+	NCDCommand = Math.round(3.27 * NCDCommand + 32)
+	console.log("NCD Command = ", NCDCommand)
 
-	changeTemp(result);
+	changeTemp(NCDCommand);
 }
 
-function changeTemp(dwyer){ //
+function changeTemp(NCDCommand){ //
 
 	const client = new net.Socket();
 
 	client.connect(2101, IPADDRESS, () => {
 		console.log("Beginning Transfer");
 
-		// Example command to change value
-		const checksum = (170 + 4 + 254 + 170 + tankNumber -1 + dwyer) & 255;
-		const command = Buffer.from([170, 4, 254, 170, tankNumber -1, dwyer, checksum]);
+		// NCD Ccmmand to change value. tank number may need to change depending on the setup of the digital potentiometers
+		const checksum = (170 + 4 + 254 + 170 + tankNumber -1 + NCDCommand) & 255;
+		const command = Buffer.from([170, 4, 254, 170, tankNumber -1, NCDCommand, checksum]);
 
 		client.write(command);
 
 		setTimeout(DELAY).then(() => {
 			client.once('data', (data) => {
-				console.log("Transfer Complete");
+				if (data.readInt16LE(2) == 85){
+					console.log("Transfer Complete");
+					console.log(""); //newline
+				}
 				client.destroy(); // Close the connection
 			});
 		}).catch((err) => {
@@ -132,4 +139,4 @@ function changeTemp(dwyer){ //
 }
 
 
-setInterval(getModbusTemperature, 10000);
+setInterval(getModbusTemperature, 5000);

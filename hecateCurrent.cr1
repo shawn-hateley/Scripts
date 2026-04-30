@@ -1,0 +1,801 @@
+'Logger Name: Hecate Communications Node
+'Pakbus ID: 30
+'CR1000 serial #64937
+'Revision history now maintained in Hakai GitHub repository
+
+'==============================================================================
+'>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Sensors in use <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+'==============================================================================
+'1 x TypeT Thermocouple
+'1 x HC2-S3 Air Temperature / Relative Humidity Probe
+'1 x TB4M Tipping Bucket Rain Gauge
+'1 X RM Young 05103-10 wind gauge   s/n:139029
+'1 x SR50A Sonic Ranging Sensor   s/n:6802
+'1 x 109 Temperature Probe - cable length 30ft
+
+'==============================================================================
+'>>>>>>>>>>>>>>>> Declare Constants, Variables, Units & Aliases <<<<<<<<<<<<<<<
+'==============================================================================
+Public BattVolt
+Public PanelT
+Public EnclosureTemp
+
+Units BattVolt = Volts
+Units PanelT = Deg C
+Units EnclosureTemp = Deg C
+
+SNMPVariable BattVolt 1.3.6.1.4.1.43592.12.1.1,FLOAT,RONLY
+SNMPVariable PanelT 1.3.6.1.4.1.43592.12.1.2,FLOAT,RONLY
+SNMPVariable EnclosureTemp 1.3.6.1.4.1.43592.12.1.3,FLOAT,RONLY
+
+'Variables for TB4 Tipping Bucket Rain Gauge
+Public Rain_mm
+Public RainToday
+Units Rain_mm = mm
+Units RainToday = mm
+Const RainGaugeMultiplier = 0.2
+
+'Variables for HC2-S3 Temperature / Relative Humidity Probe
+Public AirTemp
+Units AirTemp = Deg C
+Public RH
+Units RH = %
+Public DP
+Units DP = Deg C
+Public VP
+Units VP = kPa
+
+'Variables for 109-L temperature probe
+Public AirTemp2
+Units AirTemp2 = Deg C
+
+'Variables for 05103-10-L Wind Speed / Direction sensor
+Public WindSpd
+Units WindSpd = m/s
+Public WindDir
+Units WindDir = degrees
+
+'Variables used for calculating snow depth median value
+Public SR50A(2)
+Alias SR50A(1) = DT
+Alias SR50A(2) = Q
+
+Public SR50AReturnValues(11,2) As Float
+Public SR50A_Distance As Float
+Public SR50A_Distance_Std As Float
+Public SR50A_Quality As Float
+Public SR50A_TC_Distance As Float
+
+Public SR50AState As Boolean
+
+Units SR50A_Distance = m
+Units SR50A_TC_Distance = m
+
+Const RELAYCOUNT = 8
+Public FlexScadaRelayState(RELAYCOUNT) As Boolean           'Holds the state of the flexscada relays
+
+Public ControlFlexScadaRelays As Boolean = False            'If true the flexscada will sync with relay states held in the FlexScadaRelayState array.
+
+Public MPPTMBResult, FSMBResult As Long
+          
+'Contains the current relay state of the program locally
+Public LocalRelayState(RELAYCOUNT) as Boolean
+Public LocalRelayStateNames(RELAYCOUNT) as String * 25
+
+'flexscada port aliases
+Alias LocalRelayState(1) = DockRadio
+Alias LocalRelayState(2) = Camera1
+Alias LocalRelayState(3) = BuxtonRadio
+Alias LocalRelayState(4) = AISReceiver
+Alias LocalRelayState(5) = CR1000Logger
+Alias LocalRelayState(6) = CellRadio
+Alias LocalRelayState(7) = EthernetSwitch
+Alias LocalRelayState(8) = SW8
+
+SNMPVariable LocalRelayStateNames(RELAYCOUNT) 1.3.6.1.4.1.43592.12.2.1.1,String,RONLY
+SNMPVariable LocalRelayState(RELAYCOUNT) 1.3.6.1.4.1.43592.12.2.1.2,Integer,RWRITE
+
+Public SolarPos(5)
+Alias SolarPos(1) = SolarAzimuth
+Alias SolarPos(2) = SunElevation
+Alias SolarPos(3) = HourAngle
+Alias SolarPos(4) = Declination
+Alias SolarPos(5) = AirMass
+
+Units SolarAzimuth = deg
+Units SunElevation = deg
+Units Declination = Rad
+Units HourAngle = Rad
+
+Public LowPowerMode As Boolean = False      'Flag to control UBNT radios and cameras when battery bank low
+Public UltraLowPowerMode As Boolean = False   'Flag to control UBNT radios and cameras when battery bank ultra low
+Public PowerModeChangeTS As Long = 0      'Timestamp of last power mode change
+Public CommOveride as Boolean = True      'Flag to keep UBNT radios on during LowPowerMode
+
+SNMPVariable LowPowerMode 1.3.6.1.4.1.43592.12.1.4,Integer,RONLY
+SNMPVariable UltraLowPowerMode 1.3.6.1.4.1.43592.12.1.5,Integer,RONLY
+
+
+'Prostar MPPT Controller Values
+'https://www.morningstarcorp.com/wp-content/uploads/technical-doc-prostar-mppt-modbus-specification-en.pdf
+Public MPPTValues(19) As Float
+
+Alias MPPTValues(1) = MPPTChargeCurrent
+Units MPPTChargeCurrent = Amps
+Alias MPPTValues(2) = MPPTArrayCurrent
+Units MPPTArrayCurrent = Amps
+Alias MPPTValues(3) = MPPTBattVoltage
+Units MPPTBattVoltage = Volts
+Alias MPPTValues(4) = MPPTArrayVoltage
+Units MPPTArrayVoltage = Volts
+Alias MPPTValues(5) = MPPTLoadVoltage
+Units MPPTLoadVoltage = Volts
+Alias MPPTValues(6) = MPPTNetBattCurrent
+Units MPPTNetBattCurrent = Amps
+Alias MPPTValues(7) = MPPTLoadCurrent
+Units MPPTLoadCurrent = Amps
+Alias MPPTValues(8) = MPPTBattSenseVoltage
+Units MPPTBattSenseVoltage = Volts
+Alias MPPTValues(9) = MPPTBattVoltSlow
+Units MPPTBattVoltSlow = Volts
+Alias MPPTValues(10) = MPPTNetBattCurrentSlow
+Units MPPTNetBattCurrentSlow = Amps
+Alias MPPTValues(11) = MPPTHeatsinkTemp
+Units MPPTHeatsinkTemp = DegC
+Alias MPPTValues(12) = MPPTBattTemp
+Units MPPTBattTemp = DegC
+Alias MPPTValues(13) = MPPTAmbientTemp
+Units MPPTAmbientTemp = DegC
+Alias MPPTValues(14) = MPPTRTSTemp
+Units MPPTRTSTemp = DegC
+Alias MPPTValues(15) = MPPTPhaseUTemp
+Units MPPTPhaseUTemp = DegC
+Alias MPPTValues(16) = MPPTPhaseVTemp
+Units MPPTPhaseVTemp = DegC
+Alias MPPTValues(17) = MPPTPhaseWTemp
+Units MPPTPhaseWTemp = DegC
+Alias MPPTValues(18) = MPPTChargeState
+Alias MPPTValues(19) = MPPTArrayFault
+
+Public RadioResponse, FlexResponse, Radio2Response AS Long
+
+
+ConstTable
+  Const MORNINGSTAR_COMPORT = ComRS232
+
+  Const SR50ASDI12Port = 5
+  Const SR50AAddress = "0"
+
+  Const UTC_Offset = -8         'must be in units of seconds when used in SolarPosition
+  Const Latitude = 51.682567      'Latitude of Station
+  Const Longitude = -128.022783     'Longitude of Station
+  Const Elevation = 479       'Elevation Constant (*MUST BE IN METERS*)
+
+  Const MinSolarElevation = -6.5    'minimum altitude of the sun, used for webcam power control
+  
+  Const FlexScadaHost = "192.168.8.29"
+
+  Const LowPowerThreshold = 24.60       'Sustained system voltage to trigger LowPowerMode
+  Const UltraLowPowerThreshold = 24.20  'Sustained system voltage to trigger UltraLowPowerMode
+EndConstTable
+
+'==============================================================================
+'>>>>>>>>>>>>>>>>>>>>>>>>>>>> Define Data Tables <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+'==============================================================================
+DataTable(FiveMin,True,-1)
+  DataInterval(0,5,Min,10)
+
+  Average(1,BattVolt,FP2,False)
+  Minimum(1,BattVolt,FP2,False,False)
+  Maximum(1,BattVolt,FP2,False,False)
+
+  Average(1,PanelT,FP2,False)
+
+  Average(1,EnclosureTemp,FP2,False)
+
+  Totalize (1,Rain_mm,FP2,False)
+  Sample (1,RainToday,FP2)
+
+  Sample (1,RH,FP2)
+  Average (1,RH,FP2,False)
+  StdDev (1,RH,FP2,False)
+  Minimum (1,RH,FP2,False,False)
+  Maximum (1,RH,FP2,False,False)
+
+  Sample (1,AirTemp,FP2)
+  Average (1,AirTemp,FP2,False)
+  StdDev (1,AirTemp,FP2,False)
+  Minimum (1,AirTemp,FP2,False,False)
+  Maximum (1,AirTemp,FP2,False,False)
+  
+  Average (1,DP,FP2,False)
+  Average (1,VP,FP2,False)  
+
+  Sample (1,AirTemp2,FP2)
+  Average (1,AirTemp2,FP2,False)
+  StdDev (1,AirTemp2,FP2,False)
+  Minimum (1,AirTemp2,FP2,False,False)
+  Maximum (1,AirTemp2,FP2,False,False)
+  
+  Average (1,WindSpd,FP2,False)
+  StdDev (1,WindSpd,FP2,False)
+  Minimum (1,WindSpd,FP2,False,False)
+  Maximum (1,WindSpd,FP2,False,False)
+  WindVector (1,WindSpd,WindDir,FP2,False,0,0,4)
+  FieldNames ("WindDir_AVG:Deg,WindDir_STDEV:Deg")
+
+  Sample(1,SR50A_Distance,FP2)
+  Sample(1,SR50A_Distance_Std,FP2)
+  Sample(1,SR50A_Quality,FP2)
+  Sample(1,SR50A_TC_Distance,FP2)
+EndTable
+
+DataTable(OneHour,True,-1)
+  DataInterval(0,1,Hr,10)
+
+  Minimum(1,BattVolt,FP2,False,False)
+  Average(1,BattVolt,FP2,False)
+  Maximum(1,BattVolt,FP2,False,False)
+
+  Average(1,PanelT,FP2,False)
+  Minimum(1,PanelT,FP2,False,False)
+  Maximum(1,PanelT,FP2,False,False)
+
+  Average(1,EnclosureTemp,FP2,False)
+  Minimum(1,EnclosureTemp,FP2,False,False)
+  Maximum(1,EnclosureTemp,FP2,False,False)
+
+  Totalize (1,Rain_mm,FP2,False)
+  Sample (1,RainToday,FP2)
+
+  Sample (1,RH,FP2)
+  Average (1,RH,FP2,False)
+  StdDev (1,RH,FP2,False)
+  Minimum (1,RH,FP2,False,False)
+  Maximum (1,RH,FP2,False,False)
+
+  Sample (1,AirTemp,FP2)
+  Average (1,AirTemp,FP2,False)
+  StdDev (1,AirTemp,FP2,False)
+  Minimum (1,AirTemp,FP2,False,False)
+  Maximum (1,AirTemp,FP2,False,False)
+  
+  Sample (1,DP,FP2)
+	Average (1,DP,FP2,False)
+	StdDev (1,DP,FP2,False)
+	Minimum (1,DP,FP2,False,False)
+	Maximum (1,DP,FP2,False,False)
+  
+	Sample (1,VP,FP2)
+	Average (1,VP,FP2,False)
+	StdDev (1,VP,FP2,False)
+	Minimum (1,VP,FP2,False,False)
+	Maximum (1,VP,FP2,False,False) 
+  
+  Sample (1,AirTemp2,FP2)
+  Average (1,AirTemp2,FP2,False)
+  StdDev (1,AirTemp2,FP2,False)
+  Minimum (1,AirTemp2,FP2,False,False)
+  Maximum (1,AirTemp2,FP2,False,False)
+  
+  Average (1,WindSpd,FP2,False)
+  StdDev (1,WindSpd,FP2,False)
+  Minimum (1,WindSpd,FP2,False,False)
+  Maximum (1,WindSpd,FP2,False,False)
+  WindVector (1,WindSpd,WindDir,FP2,False,0,0,4)
+  FieldNames ("WindDir_AVG:Deg,WindDir_STDEV:Deg")
+
+  Sample(1,SR50A_Distance,FP2)
+  Average(1,SR50A_Distance,FP2,False)
+  StdDev(1,SR50A_Distance,FP2,False)
+  Minimum(1,SR50A_Distance,FP2,False,False)
+  Maximum(1,SR50A_Distance,FP2,False,False)
+
+  Sample(1,SR50A_Quality,FP2)
+  Average(1,SR50A_Quality,FP2,False)
+  StdDev(1,SR50A_Quality,FP2,False)
+  Minimum(1,SR50A_Quality,FP2,False,False)
+  Maximum(1,SR50A_Quality,FP2,False,False)
+
+  Sample(1,SR50A_TC_Distance,FP2)
+  Average(1,SR50A_TC_Distance,FP2,False)
+  StdDev(1,SR50A_TC_Distance,FP2,False)
+  Minimum(1,SR50A_TC_Distance,FP2,False,False)
+  Maximum(1,SR50A_TC_Distance,FP2,False,False)
+EndTable
+
+'Condtionally write rain tip records
+DataTable(FiveSecRain,Rain_mm,90000)
+  Sample (1,(Rain_mm / RainGaugeMultiplier),FP2)
+  FieldNames ("Rain:tips")
+  Sample (1,WindSpd,FP2)
+EndTable
+
+'Diagnostics Data Table
+DataTable(Diagnostics,True,360)
+  DataInterval(0,1,Hr,10)
+  Maximum(1,BattVolt,FP2,False,False)
+  Average(1,BattVolt,FP2,False)
+  Minimum(1,BattVolt,FP2,False,False)
+  Maximum(1,PanelT,FP2,False,False)
+  Minimum(1,PanelT,FP2,False,False)
+  Sample(1,Status.OSVersion,String)
+  Sample(1,Status.SerialNumber,IEEE4)
+  Sample(1,Status.StartTime,IEEE4)
+  Sample(1,Status.StationName,String)
+  Sample(1,Status.RunSignature,IEEE4)
+  Sample(1,Status.ProgSignature,IEEE4)
+  Sample(1,Status.LithiumBattery,IEEE4)
+  Sample(1,Status.Low12VCount,IEEE4)
+  Sample(1,Status.SkippedScan,IEEE4)
+  Sample(1,Status.CPUDriveFree,IEEE4)
+  'Sample(1,Status.USRDriveFree,IEEE4)
+  'Sample(1,Status.CardBytesFree,IEEE4)
+  Sample(1,Status.WatchdogErrors,FP2)
+  Sample(1,Status.MaxProcTime,IEEE4)
+  Sample(1,LowPowerMode,Boolean)
+  Sample(1,UltraLowPowerMode,Boolean)
+  Sample(1,CommOveride,Boolean)  
+EndTable
+
+DataTable(FifteenMinMPPT,True,480)
+  DataInterval(0,15,Min,10)
+  Average(1,MPPTChargeCurrent,FP2,False)
+  Average(1,MPPTArrayCurrent,FP2,False)
+  Average(1,MPPTBattVoltage,FP2,False)
+  Average(1,MPPTArrayVoltage,FP2,False)
+  Average(1,MPPTLoadVoltage,FP2,False)
+  Average(1,MPPTNetBattCurrent,FP2,False)
+  Average(1,MPPTLoadCurrent,FP2,False)
+  Average(1,MPPTBattSenseVoltage,FP2,False)
+  Average(1,MPPTBattVoltSlow,FP2,False)
+  Average(1,MPPTNetBattCurrentSlow,FP2,False)
+  Average(1,MPPTHeatsinkTemp,FP2,False)
+  Average(1,MPPTBattTemp,FP2,False)
+  Average(1,MPPTAmbientTemp,FP2,False)
+  Average(1,MPPTRTSTemp,FP2,False)
+  Average(1,MPPTPhaseUTemp,FP2,False)
+  Average(1,MPPTPhaseVTemp,FP2,False)
+  Average(1,MPPTPhaseWTemp,FP2,False)
+  Sample(1,MPPTChargeState,UINT2,False)
+  Sample(1,MPPTArrayFault,UINT2,False)
+EndTable
+
+DataTable(ModbusLog,(MPPTMBResult OR FSMBResult),24)
+  Sample(1,MPPTMBResult,FP2,False)
+  Sample(1,FSMBResult,FP2,False)
+EndTable
+
+DataTable(PingLog,True,24)
+  Sample(1,RadioResponse,FP2,False)
+  Sample(1,FlexResponse,FP2,False)
+  Sample(1,Radio2Response,FP2,False)
+EndTable
+
+'==============================================================================
+'>>>>>>>>>>>>>>>>>>>>>>>>> Functions & Subroutines <<<<<<<<<<<<<<<<<<<<<<<<<<<<
+'==============================================================================
+
+
+'Returns true if elevation of sun is greater than minimum solar elevation
+Function DayLight As Boolean
+  Dim TheTime(9)
+  
+  RealTime (TheTime())
+  SolarPosition (SolarPos,TheTime,UTC_Offset*3600,Latitude,Longitude,Elevation,-1,AirTemp2)
+
+  DayLight = (SunElevation > MinSolarElevation)
+  Return DayLight
+EndFunction
+
+Sub LowPowerModeEvents()
+  
+  'Turn on the AIS first and let it boot up and establish comms with vessels
+  If TimeIntoInterval(-5, 30, Min) AND DayLight() Then AISReceiver = True
+  
+  'Turn the radio on every 1/2 hour while 'LowPowerMode'
+  If TimeIntoInterval(-4, 30, Min) AND DayLight() Then DockRadio = True
+
+  'Turn the camera on once every 1/2 hour for 4 minutes during 'LowPowerMode'
+  If TimeIntoInterval(-2, 30, Min) AND DayLight() Then Camera1 = True
+
+  'Turn off camera once its done transfering images via FTP (this probably can be shortened to 1 minute after)
+  If TimeIntoInterval(2, 30, Min) Then
+    Camera1 = False    
+  EndIf
+  
+  'Turn off the pruth dock radio and AIS unless communications override flag is set
+  If TimeIntoInterval(3, 30, Min) Then
+    AISReceiver = False
+    If Not CommOveride Then 
+      DockRadio = False      
+    EndIf  
+  EndIf  
+
+EndSub
+
+Sub UltraLowPowerModeEvents()
+  'Turn the buxton radio on every 2 hours while 'LowPowerMode' set during the day
+  If TimeIntoInterval(-3, 120, Min) And DayLight() Then 
+    DockRadio = True
+    EthernetSwitch = True
+  EndIf  
+
+  'Turn the cameras on once every 2 hours for 4 minutes during 'LowPowerMode'
+  If TimeIntoInterval(-2, 120, Min) And DayLight() Then Camera1 = True
+
+  'Turn off the pruth dock radio after camera cycle unless communications override flag is set  
+  If TimeIntoInterval(2, 120, Min) Then
+    Camera1 = False    
+    If CommOveride = False Then 
+      DockRadio = False
+      EthernetSwitch = False
+    EndIf  
+  EndIf
+  
+  'Turn off AIS
+  AISReceiver = False  
+EndSub
+
+'Detects PowerMode by taking the average of the last HourCount battvolt averages
+'and comparing against defined power mode threshold constants
+'Returns 0 if Regular Power Mode
+'Returns 1 if Low Power Mode
+'Returns 2 if Ultra Low Power Mode
+Function DetectPowerMode As Long
+  Const HourCount = 10
+  Dim Counter As Long
+  Dim BattVoltHourAvg As Float
+  
+  BattVoltHourAvg = 0
+  For Counter = 1 to HourCount
+    If OneHour.BattVolt_Avg(1,Counter) = NAN Then
+      BattVoltHourAvg = BattVoltHourAvg + (LowPowerThreshold + .01)
+    Else  
+      BattVoltHourAvg = BattVoltHourAvg + OneHour.BattVolt_Avg(1,Counter)
+    EndIf  
+  Next
+  BattVoltHourAvg = BattVoltHourAvg / HourCount
+  If BattVoltHourAvg > LowPowerThreshold Then DetectPowerMode = 0
+  If BattVoltHourAvg <= LowPowerThreshold AND BattVoltHourAvg > UltraLowPowerThreshold Then DetectPowerMode = 1
+  If BattVoltHourAvg <= UltraLowPowerThreshold Then DetectPowerMode = 2  
+EndFunction
+
+'Set global boolean values LowPowerMode or UltraLowPowerMode
+'Based on constants set in the ConstTable
+Sub SetPowerMode
+  'Reset Power Modes
+  Dim PowerMode As Long
+  
+  PowerMode = DetectPowerMode()
+
+  If PowerMode = 0 Then
+    LowPowerMode = False
+    UltraLowPowerMode = False
+    Camera1 = Daylight()
+    AISReceiver = True
+    EthernetSwitch = True
+    DockRadio = True
+  EndIf
+
+  If PowerMode = 1 Then 
+    LowPowerMode = True
+    UltraLowPowerMode = False
+  EndIf
+  If PowerMode = 2 Then 
+    UltraLowPowerMode = True
+    LowPowerMode = False
+  EndIf
+EndSub
+
+Function LeapYear(TestYr) As Long
+  If TestYr Mod 4 <> 0 Then
+    Return 0
+  ElseIf TestYr Mod 400 = 0 Then
+    Return 1
+  ElseIf TestYr Mod 100 = 0 Then
+    Return 0
+  Else
+    Return 1
+  EndIf
+EndFunction
+
+Sub ControlSR50A
+  Dim TheTime(9)
+  Dim DayOfYear As Long
+  Dim LeapYearOffset As Long
+
+  Const May15th As Long = 135
+  Const Sept1st As Long = 244
+
+  RealTime (TheTime())
+  DayOfYear = TheTime(9)
+  LeapYearOffset = LeapYear(TheTime(1))
+
+  If (DayOfYear <= (May15th + LeapYearOffset)) OR (DayOfYear >= (Sept1st + LeapYearOffset)) Then
+    SW12(1)
+  Else
+    SW12(0)
+  EndIf
+
+  PortGet(SR50AState, 9)
+EndSub
+
+Sub WinterPowerMode
+  Dim TheTime(9)
+  Dim DayOfYear As Long
+  Dim LeapYearOffset As Long
+
+  Const March1st As Long = 60
+  Const Nov1st As Long = 305
+
+  RealTime (TheTime())
+  DayOfYear = TheTime(9)
+  LeapYearOffset = LeapYear(TheTime(1))
+
+  If ((DayOfYear <= (March1st + LeapYearOffset)) OR (DayOfYear >= (Nov1st + LeapYearOffset))) AND Not Daylight() Then
+    AISReceiver = False
+    If CommOveride = False Then 
+      DockRadio = False
+      EthernetSwitch = False
+    EndIf  
+  Else 
+    AISReceiver = True
+    DockRadio = True
+    EthernetSwitch = True
+  EndIf
+EndSub
+
+Function ScaleF16 (passedVal as Long) As Float
+  Dim s As Float = 0              'sign
+  Dim e As Float = 0              'exponent
+  Dim currentVal As Float = 0     'mantissa/result
+
+  currentVal = (passedVal AND &H03ff) / 1024.0      '10 bit mantissa (normalized)
+  passedVal >>= 10
+  e = (passedVal AND &H001f)                        '5 bit exponent (stored w/ 15 offset)
+  passedVal >>= 5
+  s = (passedVal AND &H0001)                        '1 bit sign
+
+  If e = 0 Then                                     'zero or subnormal
+    If currentVal = 0 Then Return 0                 'zero
+    currentVal *= PWR(2.0,-14)                      'else subnormal (no leading 1.xxx)
+    If s <> 0 Then currentVal *= -1.0
+    Return currentVal
+  EndIf
+
+  If e = &H1f Then                                'infinity or NaN
+    If currentVal = 0 Then
+      If s = 0 Then
+        Return(1/0)                              '+infinity
+      Else
+        Return(-1/0)                             '-infinity
+      EndIf
+    Else
+      Return(NAN)                                'NaN
+    EndIf
+  EndIf
+
+  currentVal += 1.0                               'add in leading 1
+  currentVal *= PWR(2.0,e-15)
+  If s <> 0 Then currentVal *= -1.0
+
+  Return currentVal
+EndFunction
+
+Function GetMPPTValues
+  Dim MPPTRegisters(19) As Long
+  Dim i As Long
+  Dim ReadResult As Long
+
+  ModbusMaster(ReadResult,MORNINGSTAR_COMPORT,9600,1,03,MPPTRegisters(),17,19,3,100,3)
+  For i = 1 to 17
+    MPPTValues(i) = ScaleF16(MPPTRegisters(i))
+  Next
+  MPPTValues(18) = MPPTRegisters(18)
+  MPPTValues(19) = MPPTRegisters(19)
+  
+  Return ReadResult
+EndFunction
+
+Function GetFlexScadaRelayState As Long
+  Dim FSModBusPort As Long
+  Dim ReadResult As Long
+
+  FSModBusPort = TCPOpen(FlexScadaHost,502,1,500)
+  ModbusMaster(ReadResult,FSModBusPort,9600,1,02,FlexScadaRelayState,102,8,3,1000)
+  TCPClose(FSModBusPort)
+  
+  Return ReadResult
+EndFunction
+
+'==============================================================================
+'>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Main Program <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+'==============================================================================
+PipeLineMode
+
+BeginProg
+  ESSInitialize("private,public")     'Enable SNMP agent on datalogger
+  
+  ModbusSlave(502,115200,1,MPPTValues(),0,0)
+  
+  SerialOpen(MORNINGSTAR_COMPORT,9600,7,0,256)          'Configure serial port communications for ProStarMPPT
+
+  LowPowerMode = False
+  UltraLowPowerMode = False
+  CommOveride = True
+  
+  DockRadio = True
+  Camera1 = False
+  BuxtonRadio = False
+  AISReceiver = False
+  CR1000Logger = False
+  CellRadio = False
+  EthernetSwitch = True
+  SW8 = False
+
+  LocalRelayStateNames(1) = "DockRadio"
+  LocalRelayStateNames(2) = "Camera1"
+  LocalRelayStateNames(3) = "BuxtonRadio"
+  LocalRelayStateNames(4) = "AISReceiver"
+  LocalRelayStateNames(5) = "CR1000Logger"
+  LocalRelayStateNames(6) = "CellRadio"
+  LocalRelayStateNames(7) = "EthernetSwitch"
+  LocalRelayStateNames(8) = "SW8"    
+ 
+  'Init SR50A power on program launch
+  ControlSR50A
+  
+  GetMPPTValues()
+  GetFlexScadaRelayState()
+
+  'Main Scan
+  Scan(5,Sec,1,0)
+
+    'Every 5 minutes check for daylight and turn cameras on/off, initiate FTP transfer
+    If TimeIntoInterval(0, 5, Min) And Not (LowPowerMode Or UltraLowPowerMode) Then
+      Camera1 = DayLight()
+      WinterPowerMode
+    EndIf
+
+    '-------------  Low Power Mode Operation Conditions -----------------
+    If LowPowerMode Then LowPowerModeEvents()
+
+    '-------------  Ultra Low Power Mode Operation Conditions -----------------
+    If UltraLowPowerMode Then UltraLowPowerModeEvents()
+
+    'Default Datalogger Battery Voltage measurement 'BattVolt'
+    'Battery(BattVolt)
+    BattVolt = MPPTBattVoltage
+
+    'Default Wiring Panel Temperature measurement 'PanelT'
+    PanelTemp(PanelT,_60Hz)
+
+    'Type T (copper-constantan) Thermocouple measurements 'EnclosureTemp'
+    TCDiff(EnclosureTemp,1,mV2_5C,1,TypeT,PanelT,True,0,_60Hz,1,0)
+
+		'------- Measure HC2-S3 Temperature and Relative Humidity Probe -----
+		VoltDiff (AirTemp,1,mV2500,2,False,0,_60Hz,0.1,-40)
+		VoltDiff (RH,1,mV2500,3,False,0,_60Hz,0.1,0)
+		If RH>100 AND RH<108 Then RH=100
+
+    DewPoint(DP,AirTemp,RH)
+    VaporPressure(VP,AirTemp,RH)    
+
+    '-------------------- Measure 109 Temperature Probe -----------------
+    Therm109 (AirTemp2,1,16,VX2,0,_60Hz,1,0)   
+    
+    'TB4/TB4MM Rain Gauge measurement 'Rain_mm'
+    PulseCount(Rain_mm,1,2,2,0,RainGaugeMultiplier,0)
+    RainToday = RainToday + Rain_mm
+
+    '----------- Measure 05103-10 Wind Speed & Direction Sensor --------
+    'multiplier below of 0.098 gives m/s; multiplier 0.1904 gives knots.
+    PulseCount(WindSpd,1,1,1,1,0.098,0)
+    BrHalf(WindDir,1,mV2500,7,VX1,1,2500,True,0,_60Hz,355,0)
+    If WindDir >= 360 Then WindDir = 0
+    If WindDir < 0 Then WindDir = 0
+
+    'SR50A Sonic Ranging Sensor (SDI-12 Output) measurements 'DT', 'Q', 'TCDT'
+    'updated to scan once per five minutes rather than every 5 seconds
+    If SR50AState = True AND TimeIntoInterval(1,5,Min) Then
+      TriggerSequence(1,0)
+    EndIf
+
+    'Call Data Tables and Store Data
+    CallTable(FiveMin)
+    CallTable(OneHour)
+    CallTable(FiveSecRain)
+    CallTable(FifteenMinMPPT)    
+
+    If TimeIntoInterval (0,1,Hr) Then
+      SetPowerMode()
+    EndIf
+    
+    CallTable(Diagnostics)
+
+    If TimeIntoInterval (0,1,Day) Then
+      RainToday = 0
+      ControlSR50A
+    EndIf
+    
+    'Poll MPPT modbus interface
+    TriggerSequence(2, 0)
+    
+    If TimeIntoInterval (0,5,Min) Then
+      TriggerSequence(3,0)
+    EndIf    
+  NextScan
+
+  'measure SR50A slow sequence
+  'Slow sequence 1
+  SlowSequence
+    Do
+      WaitTriggerSequence
+      Dim n, ZeroCount, MedianPosition As Long
+      Dim SR50ADistSort(11) As Float
+      
+      ZeroCount = 0      
+      For n = 1 To 11
+        SDI12Recorder(SR50A(),SR50ASDI12Port,SR50AAddress,"M1!",1,0)
+        SR50AReturnValues(n,1) = DT
+        SR50AReturnValues(n,2) = Q
+        If Q = 0 Then ZeroCount += 1
+        SR50ADistSort(n) = SR50AReturnValues(n,1)
+      Next      
+      SortSpa(SR50ADistSort(1),11,SR50ADistSort(1))
+      StdDevSpa(SR50A_Distance_Std,11,SR50ADistSort())      
+      MedianPosition = ((11 - ZeroCount) INTDV 2) + ((11 - ZeroCount) Mod 2) + ZeroCount      
+      If MedianPosition Mod 2 = 1 Then
+        SR50A_Distance = SR50ADistSort(MedianPosition)        
+      Else
+        SR50A_Distance = (SR50ADistSort(MedianPosition) + SR50ADistSort(MedianPosition + 1)) / 2
+      EndIf
+      'TODO: this is incorrect and based on original CS program example.  Will replace on OS30+ update.
+      For n = 1 To 11
+        If SR50AReturnValues(n,1) = SR50A_Distance Then
+          SR50A_Quality = SR50AReturnValues(n,2)
+          ExitFor
+        EndIf        
+      Next
+      SR50A_TC_Distance = SR50A_Distance * SQR((22 + 273.15) / 273.15)
+    Loop
+  EndSequence
+  
+  'ProStarMPPT & Flexs Q5 modbus communications can timeout or otherwise cause the main scan loop to eclipse the 5 sec scan rate
+  'Slow sequence 2
+  SlowSequence
+    Do
+      WaitTriggerSequence
+      
+      MPPTMBResult = GetMPPTValues()
+      
+      'When ControlFlexScadaRelays is set to FALSE (default), then the program will continue to fetch and sync with the relay state from the flexScada.
+      'When ControlFlexScadaRelays is set to TRUE (manually), then the program will no longer fetch the remote relay state, and the flexScada
+      'will begin to poll the datalogger for its local relay state (ie: the flexScada will follow the state of CR1000 array FlexScadaRelayState).
+      If Not ControlFlexScadaRelays Then 
+        FSMBResult = GetFlexScadaRelayState()       'Query flexScada for its relay states
+        LocalRelayState() = FlexScadaRelayState()   'sync local relay state with that of the flexScada
+      Else
+        FlexScadaRelayState() = LocalRelayState() 
+      EndIf  
+      
+      CallTable(ModbusLog)
+    Loop
+  EndSequence
+  
+  'ProStarMPPT & Flexs Q5 modbus communications can timeout or otherwise cause the main scan loop to eclipse the 5 sec scan rate
+  'Slow sequence 2
+  SlowSequence
+    Do
+      WaitTriggerSequence
+      
+      RadioResponse = PingIP("192.168.1.57",1000)
+      FlexResponse = PingIP("192.168.8.29",1000)
+      Radio2Response = PingIP("192.168.1.54",1000)
+      
+      CallTable(PingLog)
+
+    Loop
+  EndSequence  
+EndProg
