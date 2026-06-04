@@ -50,7 +50,7 @@ if (helpIndex > -1) {
 
 if (setPointIndex > -1) {
   // Retrieve the value after --custom
-   setPoint = parseInt(argv[setPointIndex + 1], 10);
+   setPoint = parseFloat(argv[setPointIndex + 1], 10);
 } else {
    console.log("No setpoint provided, using 20 as default")
    setPoint = 20;//
@@ -161,7 +161,7 @@ function calculateNCDValue(currentTemp) {
 
 	var result = setPointDiff + currentTemp
 	console.log("Dwyer Temp set to ", result)
-	result = Math.round(3.27 * result + 32)
+	result = Math.round(3.21 * result + 39.4)
 	console.log("NCD Command = ", result)
 
 	changeTemp(result);
