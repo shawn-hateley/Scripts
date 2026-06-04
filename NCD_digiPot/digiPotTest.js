@@ -3,7 +3,7 @@ const { argv } = require('process'); // Access command-line arguments
 const { setTimeout } = require('timers/promises');
 
 // IP address and delay constants
-const IPADDRESS = "10.12.16.11";
+const IPADDRESS = "10.10.8.25";
 const DELAY = 1000; // milliseconds
 
 // Get temperature from command-line arguments
